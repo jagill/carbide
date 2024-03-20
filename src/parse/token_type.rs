@@ -1,14 +1,8 @@
 use logos::Logos;
 
-#[derive(Debug, PartialEq, Clone, Default)]
-pub enum LexError {
-    #[default]
-    UnknownToken,
-}
-
 #[derive(Logos, Debug, PartialEq)]
-#[logos(error = LexError)]
-pub enum Token {
+#[logos()]
+pub enum TokenType {
     #[token("\n")]
     Newline,
     #[regex(r"[ \t\r\f]+")]
@@ -30,11 +24,11 @@ pub enum Token {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Token::*;
+    use TokenType::*;
 
     #[test]
     fn test_bool_keywords() {
-        let mut lex = Token::lexer(
+        let mut lex = TokenType::lexer(
             r"
         bool true or false
         and not
