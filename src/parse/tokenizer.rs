@@ -74,22 +74,25 @@ impl<'source> Tokenizer<'source> {
         Ok(Token { token_type, data })
     }
 
-    fn load(&mut self) -> ParseResult<()> {
-        let empty = self.dock.is_none();
-        if empty {
-            let next_token = self.pull()?;
-            self.dock = Some(next_token);
-        }
-        Ok(())
-    }
-
     /// Produce the next token, or an error.
     /// Return ParseError::UnexpectedEnd if no tokens are left.
-    pub fn advance(&mut self) -> ParseResult<Token<'source>> {
+    pub fn next(&mut self) -> ParseResult<Token<'source>> {
         if let Some(token_res) = self.dock.take() {
             Ok(token_res)
         } else {
             self.pull()
+        }
+    }
+
+    /// Produce the next token, or an error, skipping whitespace/newline.
+    /// Return ParseError::UnexpectedEnd if no tokens are left.
+    pub fn advance(&mut self) -> ParseResult<Token<'source>> {
+        loop {
+            let token = self.next()?;
+            match token.token_type {
+                TokenType::Newline | TokenType::Whitespace => continue,
+                _ => return Ok(token),
+            }
         }
     }
 
@@ -116,14 +119,14 @@ impl<'source> Tokenizer<'source> {
     /// Return None if the next token is not of the given type; this does not consume the token.
     /// Return None if no tokens are left.
     pub fn opt(&mut self, expected: TokenType) -> ParseResult<Option<Token>> {
-        self.load()?;
+        let token = self.advance()?;
+        assert!(self.dock.is_none(), "Expected empty dock after advance",);
 
-        match self.dock.take() {
-            Some(token) if token.token_type == expected => Ok(Some(token)),
-            token_opt => {
-                self.dock = token_opt;
-                Ok(None)
-            }
+        if token.token_type == expected {
+            Ok(Some(token))
+        } else {
+            self.dock = Some(token);
+            Ok(None)
         }
     }
 
@@ -148,11 +151,10 @@ mod tests {
     use logos::Logos;
 
     use super::*;
+    use TokenType::*;
 
     #[test]
     fn test_peek() {
-        use TokenType::*;
-
         let mut tokenizer = Tokenizer::new(TokenType::lexer("bool true"));
         assert_eq!(tokenizer.opt(False), Ok(None));
         let t = tokenizer.opt(Bool).unwrap().unwrap();
@@ -161,7 +163,7 @@ mod tests {
         assert_eq!(t.data.span, 0..4);
         assert_eq!(t.data.line, 0);
         assert_eq!(t.data.col, 0);
-        let t = tokenizer.advance().unwrap();
+        let t = tokenizer.next().unwrap();
         assert_eq!(t.token_type, Whitespace);
         assert_eq!(t.data.lexeme, " ");
         assert_eq!(t.data.span, 4..5);
@@ -177,5 +179,36 @@ mod tests {
             Err(e) => assert_eq!(e, ParseError::Eof { line: 0, col: 9 }),
             x => panic!("Unexpected result: {x:?}"),
         }
+    }
+
+    #[test]
+    fn test_double_unary() {
+        let mut tokenizer = Tokenizer::new(TokenType::lexer("not not false"));
+        let mut t: Token;
+        t = tokenizer.advance().unwrap();
+        assert_eq!(t.token_type, Not);
+        t = tokenizer.advance().unwrap();
+        assert_eq!(t.token_type, Not);
+        t = tokenizer.advance().unwrap();
+        assert_eq!(t.token_type, False);
+    }
+
+    #[test]
+    fn test_double_unary_opt() {
+        let mut tokenizer = Tokenizer::new(TokenType::lexer("not not false"));
+        match tokenizer.opt(Not).unwrap() {
+            None => panic!("Expected first Not"),
+            Some(t) => assert_eq!(t.token_type, Not),
+        }
+        match tokenizer.opt(Not).unwrap() {
+            None => panic!("Expected second Not"),
+            Some(t) => assert_eq!(t.token_type, Not),
+        }
+        match tokenizer.opt(Not).unwrap() {
+            None => (),
+            Some(t) => panic!("Unexpected token {t:?}"),
+        }
+        let t = tokenizer.advance().unwrap();
+        assert_eq!(t.token_type, False);
     }
 }
