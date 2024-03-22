@@ -24,6 +24,7 @@ pub fn parse_expr(source: &str) -> ParseResult<Expr> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::expr::BinaryOp;
     use crate::ast::expr::UnaryOp;
 
     #[test]
@@ -65,6 +66,34 @@ mod tests {
             Ok(Expr::unary(
                 UnaryOp::Not,
                 Expr::unary(UnaryOp::Not, Expr::bool(false))
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_binary() {
+        assert_eq!(
+            parse_expr(" true and true"),
+            Ok(Expr::binary(
+                Expr::bool(true),
+                BinaryOp::And,
+                Expr::bool(true)
+            ))
+        );
+        assert_eq!(
+            parse_expr("not true and false"),
+            Ok(Expr::binary(
+                Expr::unary(UnaryOp::Not, Expr::bool(true)),
+                BinaryOp::And,
+                Expr::bool(false)
+            ))
+        );
+        assert_eq!(
+            parse_expr("not not true and not not false"),
+            Ok(Expr::binary(
+                Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, Expr::bool(true))),
+                BinaryOp::And,
+                Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, Expr::bool(false))),
             ))
         );
     }

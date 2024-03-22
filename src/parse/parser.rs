@@ -2,6 +2,7 @@ use super::error::ParseError;
 use super::tokenizer::Tokenizer;
 use super::ParseResult;
 use super::TokenType as ToT;
+use crate::ast::expr::BinaryOp;
 use crate::ast::expr::Expr;
 use crate::ast::expr::UnaryOp;
 
@@ -16,7 +17,17 @@ impl<'source> Parser<'source> {
 
     // Specific parsing for AST
     pub fn parse_expression(&mut self) -> ParseResult<Expr> {
-        self.unary()
+        self.factor()
+    }
+
+    fn factor(&mut self) -> ParseResult<Expr> {
+        let left = self.unary()?;
+
+        if self.tokenizer.opt(ToT::And).is_some() {
+            return Ok(Expr::binary(left, BinaryOp::And, self.factor()?));
+        }
+
+        Ok(left)
     }
 
     fn unary(&mut self) -> ParseResult<Expr> {
