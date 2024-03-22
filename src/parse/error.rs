@@ -1,3 +1,4 @@
+use super::Token;
 use super::TokenType;
 use thiserror::Error;
 
@@ -29,19 +30,14 @@ impl From<String> for ParseError {
     }
 }
 
-// impl ParseError {
-//     pub fn end(msg: impl Into<String>) -> Self {
-//         ParseError::UnexpectedEnd {
-//             expected: msg.into(),
-//         }
-//     }
-
-// pub fn wrong_token(token: Token, : Lexer, msg: impl Into<String>) -> Self {
-//     ParseError::UnexpectedToken {
-//         actual: .typ,
-//         line: token.line,
-//         lexeme: token.lexeme.to_owned(),
-//         expected: msg.into(),
-//     }
-// }
-// }
+impl ParseError {
+    pub fn unexpected_token(token: Token, msg: impl Into<String>) -> Self {
+        ParseError::UnexpectedToken {
+            expected: msg.into(),
+            actual: token.token_type,
+            lexeme: token.data.lexeme.to_owned(),
+            line: token.data.line,
+            col: token.data.col,
+        }
+    }
+}

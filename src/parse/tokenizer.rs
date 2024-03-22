@@ -19,8 +19,8 @@ pub struct TokenData<'source> {
 
 #[derive(Debug, PartialEq)]
 pub struct Token<'source> {
-    token_type: TokenType,
-    data: TokenData<'source>,
+    pub token_type: TokenType,
+    pub data: TokenData<'source>,
 }
 
 pub struct Tokenizer<'source> {

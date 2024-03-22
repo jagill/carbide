@@ -1,6 +1,6 @@
 use logos::Logos;
 
-#[derive(Logos, Debug, PartialEq)]
+#[derive(Logos, Copy, Clone, Debug, PartialEq)]
 #[logos()]
 pub enum TokenType {
     #[token("\n")]
@@ -19,6 +19,8 @@ pub enum TokenType {
     And,
     #[token("or")]
     Or,
+    #[regex(r"[a-zA-Z_]+")]
+    Identifier,
 }
 
 #[cfg(test)]
