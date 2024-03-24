@@ -20,7 +20,7 @@ impl<'source> Parser<'source> {
     }
 
     fn unary(&mut self) -> ParseResult<Expr> {
-        if self.tokenizer.opt(ToT::Not)?.is_some() {
+        if self.tokenizer.opt(ToT::Not).is_some() {
             return Ok(Expr::unary(UnaryOp::Not, self.unary()?));
         }
 
@@ -28,7 +28,7 @@ impl<'source> Parser<'source> {
     }
 
     fn primary(&mut self) -> ParseResult<Expr> {
-        let token = self.tokenizer.advance()?;
+        let token = self.tokenizer.force_advance()?;
         match token.token_type {
             ToT::False => Ok(Expr::bool(false)),
             ToT::True => Ok(Expr::bool(true)),

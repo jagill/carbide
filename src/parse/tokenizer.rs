@@ -25,7 +25,11 @@ pub struct Token<'source> {
 
 pub struct Tokenizer<'source> {
     lexer: Lexer<'source, TokenType>,
-    dock: Option<Token<'source>>,
+    /// Contain next Token, if any.  To interpret this,
+    /// None -> We have not pulled the next token.
+    /// Some(None) -> We have pulled the next token, but there isn't any.
+    /// Some(Some(t)) -> We've pulled the next token, and this is it.
+    dock: Option<Option<Token<'source>>>,
     /// line (0-index) the next token is on
     line: usize,
     /// column (0-index) the next token starts
@@ -44,55 +48,61 @@ impl<'source> Tokenizer<'source> {
     }
 
     /// Pull the next TokenData from lexer; does not check dock
-    fn pull(&mut self) -> ParseResult<Token<'source>> {
-        let token_type = match self.lexer.next() {
-            None => Err(ParseError::Eof {
-                line: self.line,
-                col: self.col,
-            }),
-            // Logos returns an Err(()) for unknown token
-            Some(Err(())) => Err(ParseError::UnknownToken {
-                lexeme: self.lexer.slice().to_owned(),
-                line: self.line,
-                col: self.col,
-            }),
-            Some(Ok(t)) => Ok(t),
-        }?;
+    /// An Err from lexer is converted to an UnknownToken.
+    fn pull(&mut self) -> Option<Token<'source>> {
+        let token_type_opt = self
+            .lexer
+            .next()
+            .map(|res| res.unwrap_or(TokenType::UnknownToken));
         let data = TokenData {
             span: self.lexer.span(),
             lexeme: self.lexer.slice(),
             line: self.line,
             col: self.col,
         };
-        match &token_type {
-            TokenType::Newline => {
+        match &token_type_opt {
+            None => (),
+            Some(TokenType::Newline) => {
                 self.line += 1;
                 self.col = 0;
             }
-            _ => self.col += self.lexer.span().end - self.lexer.span().start,
+            Some(_) => self.col += self.lexer.span().end - self.lexer.span().start,
         }
-        Ok(Token { token_type, data })
+        token_type_opt.map(|token_type| Token { token_type, data })
     }
 
-    /// Produce the next token, or an error.
-    /// Return ParseError::UnexpectedEnd if no tokens are left.
-    pub fn next(&mut self) -> ParseResult<Token<'source>> {
-        if let Some(token_res) = self.dock.take() {
-            Ok(token_res)
-        } else {
-            self.pull()
-        }
+    /// Produce the next token if any, or None if no tokens left.
+    pub fn next(&mut self) -> Option<Token<'source>> {
+        self.dock.take().unwrap_or_else(|| self.pull())
     }
 
-    /// Produce the next token, or an error, skipping whitespace/newline.
-    /// Return ParseError::UnexpectedEnd if no tokens are left.
-    pub fn advance(&mut self) -> ParseResult<Token<'source>> {
+    /// Produce the next token, skipping whitespace/newline.
+    /// Return None if no tokens are left.
+    pub fn advance(&mut self) -> Option<Token<'source>> {
         loop {
             let token = self.next()?;
             match token.token_type {
                 TokenType::Newline | TokenType::Whitespace => continue,
-                _ => return Ok(token),
+                _ => return Some(token),
             }
+        }
+    }
+
+    /// Advance and return Token.
+    /// Return ParseError::UnexpectedEnd if no tokens are left.
+    pub fn force_advance(&mut self) -> ParseResult<Token<'source>> {
+        match self.advance() {
+            None => Err(ParseError::Eof {
+                line: self.line,
+                col: self.col,
+            }),
+            Some(
+                token @ Token {
+                    token_type: TokenType::UnknownToken,
+                    ..
+                },
+            ) => Err(ParseError::unknown_token(token)),
+            Some(token) => Ok(token),
         }
     }
 
@@ -100,33 +110,24 @@ impl<'source> Tokenizer<'source> {
     /// Return ParseError::UnexpectedToken if the next token is not of the given type.
     /// Return ParseError::UnexpectedEnd if no tokens are left.
     pub fn expect(&mut self, expected: TokenType) -> ParseResult<Token> {
-        match self.advance()? {
+        match self.force_advance()? {
             token if token.token_type == expected => Ok(token),
-            Token {
-                token_type: tp,
-                data,
-            } => Err(ParseError::UnexpectedToken {
-                actual: tp,
-                line: data.line,
-                col: data.col,
-                lexeme: data.lexeme.to_owned(),
-                expected: format!("{expected:?}"),
-            }),
+            token => Err(ParseError::unexpected_token(token, format!("{expected:?}"))),
         }
     }
 
     /// Produce the next token if it is of the given type.
     /// Return None if the next token is not of the given type; this does not consume the token.
     /// Return None if no tokens are left.
-    pub fn opt(&mut self, expected: TokenType) -> ParseResult<Option<Token>> {
+    pub fn opt(&mut self, expected: TokenType) -> Option<Token> {
         let token = self.advance()?;
         assert!(self.dock.is_none(), "Expected empty dock after advance",);
 
         if token.token_type == expected {
-            Ok(Some(token))
+            Some(token)
         } else {
-            self.dock = Some(token);
-            Ok(None)
+            self.dock = Some(Some(token));
+            None
         }
     }
 
@@ -156,8 +157,8 @@ mod tests {
     #[test]
     fn test_peek() {
         let mut tokenizer = Tokenizer::new(TokenType::lexer("bool true"));
-        assert_eq!(tokenizer.opt(False), Ok(None));
-        let t = tokenizer.opt(Bool).unwrap().unwrap();
+        assert_eq!(tokenizer.opt(False), None);
+        let t = tokenizer.opt(Bool).unwrap();
         assert_eq!(t.token_type, Bool);
         assert_eq!(t.data.lexeme, "bool");
         assert_eq!(t.data.span, 0..4);
@@ -175,7 +176,7 @@ mod tests {
         assert_eq!(t.data.span, 5..9);
         assert_eq!(t.data.line, 0);
         assert_eq!(t.data.col, 5);
-        match tokenizer.advance() {
+        match tokenizer.force_advance() {
             Err(e) => assert_eq!(e, ParseError::Eof { line: 0, col: 9 }),
             x => panic!("Unexpected result: {x:?}"),
         }
@@ -196,15 +197,15 @@ mod tests {
     #[test]
     fn test_double_unary_opt() {
         let mut tokenizer = Tokenizer::new(TokenType::lexer("not not false"));
-        match tokenizer.opt(Not).unwrap() {
+        match tokenizer.opt(Not) {
             None => panic!("Expected first Not"),
             Some(t) => assert_eq!(t.token_type, Not),
         }
-        match tokenizer.opt(Not).unwrap() {
+        match tokenizer.opt(Not) {
             None => panic!("Expected second Not"),
             Some(t) => assert_eq!(t.token_type, Not),
         }
-        match tokenizer.opt(Not).unwrap() {
+        match tokenizer.opt(Not) {
             None => (),
             Some(t) => panic!("Unexpected token {t:?}"),
         }

@@ -21,6 +21,7 @@ pub enum TokenType {
     Or,
     #[regex(r"[a-zA-Z_]+")]
     Identifier,
+    UnknownToken,
 }
 
 #[cfg(test)]

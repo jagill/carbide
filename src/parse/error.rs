@@ -40,4 +40,13 @@ impl ParseError {
             col: token.data.col,
         }
     }
+
+    pub fn unknown_token(token: Token) -> Self {
+        assert_eq!(token.token_type, TokenType::UnknownToken);
+        ParseError::UnknownToken {
+            lexeme: token.data.lexeme.to_owned(),
+            line: token.data.line,
+            col: token.data.col,
+        }
+    }
 }
