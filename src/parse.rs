@@ -96,5 +96,30 @@ mod tests {
                 Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, Expr::bool(false))),
             ))
         );
+
+        assert_eq!(
+            parse_expr("true or false"),
+            Ok(Expr::binary(
+                Expr::bool(true),
+                BinaryOp::Or,
+                Expr::bool(false),
+            ))
+        );
+        assert_eq!(
+            parse_expr("true or false and not true or false"),
+            Ok(Expr::binary(
+                Expr::bool(true),
+                BinaryOp::Or,
+                Expr::binary(
+                    Expr::binary(
+                        Expr::bool(false),
+                        BinaryOp::And,
+                        Expr::unary(UnaryOp::Not, Expr::bool(true))
+                    ),
+                    BinaryOp::Or,
+                    Expr::bool(false),
+                )
+            ))
+        );
     }
 }

@@ -17,14 +17,24 @@ impl<'source> Parser<'source> {
 
     // Specific parsing for AST
     pub fn parse_expression(&mut self) -> ParseResult<Expr> {
-        self.factor()
+        self.log_or()
     }
 
-    fn factor(&mut self) -> ParseResult<Expr> {
+    fn log_or(&mut self) -> ParseResult<Expr> {
+        let left = self.log_and()?;
+
+        if self.tokenizer.opt(ToT::Or).is_some() {
+            return Ok(Expr::binary(left, BinaryOp::Or, self.log_or()?));
+        }
+
+        Ok(left)
+    }
+
+    fn log_and(&mut self) -> ParseResult<Expr> {
         let left = self.unary()?;
 
         if self.tokenizer.opt(ToT::And).is_some() {
-            return Ok(Expr::binary(left, BinaryOp::And, self.factor()?));
+            return Ok(Expr::binary(left, BinaryOp::And, self.log_and()?));
         }
 
         Ok(left)
