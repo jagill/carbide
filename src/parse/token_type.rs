@@ -19,6 +19,10 @@ pub enum TokenType {
     And,
     #[token("or")]
     Or,
+    #[token("==")]
+    EqualEqual,
+    #[token("!=")]
+    BangEqual,
     #[regex(r"[a-zA-Z_]+")]
     Identifier,
     UnknownToken,

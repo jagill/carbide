@@ -26,6 +26,8 @@ pub enum UnaryOp {
 pub enum BinaryOp {
     And,
     Or,
+    Equal,
+    NotEqual,
 }
 
 impl Expr {

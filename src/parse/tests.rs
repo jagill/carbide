@@ -49,7 +49,7 @@ fn test_parse_unary() {
 }
 
 #[test]
-fn test_parse_binary() {
+fn test_parse_and_or() {
     assert_eq!(
         parse_expr(" true and true"),
         Ok(Expr::binary(
@@ -97,6 +97,35 @@ fn test_parse_binary() {
                 BinaryOp::Or,
                 Expr::bool(false),
             )
+        ))
+    );
+}
+
+#[test]
+fn test_equals() {
+    assert_eq!(
+        parse_expr("true == false"),
+        Ok(Expr::binary(
+            Expr::bool(true),
+            BinaryOp::Equal,
+            Expr::bool(false),
+        ))
+    );
+    assert_eq!(
+        parse_expr("true != false"),
+        Ok(Expr::binary(
+            Expr::bool(true),
+            BinaryOp::NotEqual,
+            Expr::bool(false),
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("true != false or true == true"),
+        Ok(Expr::binary(
+            Expr::binary(Expr::bool(true), BinaryOp::NotEqual, Expr::bool(false),),
+            BinaryOp::Or,
+            Expr::binary(Expr::bool(true), BinaryOp::Equal, Expr::bool(true),)
         ))
     );
 }

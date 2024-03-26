@@ -31,10 +31,24 @@ impl<'source> Parser<'source> {
     }
 
     fn log_and(&mut self) -> ParseResult<Expr> {
-        let left = self.unary()?;
+        let left = self.equality()?;
 
         if self.tokenizer.opt(ToT::And).is_some() {
             return Ok(Expr::binary(left, BinaryOp::And, self.log_and()?));
+        }
+
+        Ok(left)
+    }
+
+    fn equality(&mut self) -> ParseResult<Expr> {
+        let left = self.unary()?;
+
+        if self.tokenizer.opt(ToT::BangEqual).is_some() {
+            return Ok(Expr::binary(left, BinaryOp::NotEqual, self.unary()?));
+        }
+
+        if self.tokenizer.opt(ToT::EqualEqual).is_some() {
+            return Ok(Expr::binary(left, BinaryOp::Equal, self.unary()?));
         }
 
         Ok(left)
