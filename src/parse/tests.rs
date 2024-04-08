@@ -129,3 +129,44 @@ fn test_equals() {
         ))
     );
 }
+
+#[test]
+fn test_parse_block() {
+    assert_eq!(
+        parse_expr("()"),
+        Err(ParseError::UnexpectedToken {
+            expected: "primary expression".to_owned(),
+            actual: TokenType::CloseParen,
+            lexeme: ")".to_owned(),
+            line: 0,
+            col: 1,
+        })
+    );
+
+    assert_eq!(
+        parse_expr("(true)"),
+        Ok(Expr::Block(vec![Expr::bool(true)]))
+    );
+
+    assert_eq!(
+        parse_expr("(true or false)"),
+        Ok(Expr::Block(vec![Expr::binary(
+            Expr::bool(true),
+            BinaryOp::Or,
+            Expr::bool(false),
+        ),]))
+    );
+
+    assert_eq!(
+        parse_expr("false and (true or false)"),
+        Ok(Expr::binary(
+            Expr::bool(false),
+            BinaryOp::And,
+            Expr::Block(vec![Expr::binary(
+                Expr::bool(true),
+                BinaryOp::Or,
+                Expr::bool(false)
+            ),])
+        ))
+    );
+}

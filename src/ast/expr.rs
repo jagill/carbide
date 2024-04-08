@@ -10,6 +10,7 @@ pub enum Expr {
         op: BinaryOp,
         right: Box<Expr>,
     },
+    Block(Vec<Expr>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -23,6 +23,10 @@ pub enum TokenType {
     EqualEqual,
     #[token("!=")]
     BangEqual,
+    #[token("(")]
+    OpenParen,
+    #[token(")")]
+    CloseParen,
     #[regex(r"[a-zA-Z_]+")]
     Identifier,
     UnknownToken,

@@ -67,7 +67,17 @@ impl<'source> Parser<'source> {
         match token.token_type {
             ToT::False => Ok(Expr::bool(false)),
             ToT::True => Ok(Expr::bool(true)),
+            ToT::OpenParen => self.block(),
             _ => Err(ParseError::unexpected_token(token, "primary expression")),
         }
+    }
+
+    // This expects the open delimiter to already be consumed
+    // TODO: handle semicolons
+    fn block(&mut self) -> ParseResult<Expr> {
+        let mut contents = Vec::new();
+        contents.push(self.parse_expression()?);
+        self.tokenizer.expect(ToT::CloseParen)?;
+        Ok(Expr::Block(contents))
     }
 }
