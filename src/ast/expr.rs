@@ -11,6 +11,11 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Block(Vec<Expr>),
+    If {
+        condition: Box<Expr>,
+        then_expr: Box<Expr>,
+        else_expr: Option<Box<Expr>>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -48,6 +53,14 @@ impl Expr {
             left: Box::new(left),
             op,
             right: Box::new(right),
+        }
+    }
+
+    pub fn ifthen(cond: Expr, then_: Expr, else_: Option<Expr>) -> Self {
+        Expr::If {
+            condition: Box::new(cond),
+            then_expr: Box::new(then_),
+            else_expr: else_.map(Box::new),
         }
     }
 }

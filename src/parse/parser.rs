@@ -17,13 +17,34 @@ impl<'source> Parser<'source> {
 
     // Specific parsing for AST
     pub fn parse_expression(&mut self) -> ParseResult<Expr> {
-        self.log_or()
+        if self.match_next(ToT::If) {
+            self.parse_if()
+        } else {
+            self.log_or()
+        }
+    }
+
+    // If Token must already be consumed
+    fn parse_if(&mut self) -> ParseResult<Expr> {
+        let condition = self.parse_expression()?;
+        self.tokenizer.expect(ToT::OpenParen)?;
+        let then_expr = self.block()?;
+        let else_expr = if self.match_next(ToT::Else) {
+            Some(self.parse_expression()?)
+        } else {
+            None
+        };
+        Ok(Expr::If {
+            condition: Box::new(condition),
+            then_expr: Box::new(then_expr),
+            else_expr: else_expr.map(Box::new),
+        })
     }
 
     fn log_or(&mut self) -> ParseResult<Expr> {
         let left = self.log_and()?;
 
-        if self.tokenizer.opt(ToT::Or).is_some() {
+        if self.match_next(ToT::Or) {
             return Ok(Expr::binary(left, BinaryOp::Or, self.log_or()?));
         }
 
@@ -33,7 +54,7 @@ impl<'source> Parser<'source> {
     fn log_and(&mut self) -> ParseResult<Expr> {
         let left = self.equality()?;
 
-        if self.tokenizer.opt(ToT::And).is_some() {
+        if self.match_next(ToT::And) {
             return Ok(Expr::binary(left, BinaryOp::And, self.log_and()?));
         }
 
@@ -43,11 +64,11 @@ impl<'source> Parser<'source> {
     fn equality(&mut self) -> ParseResult<Expr> {
         let left = self.unary()?;
 
-        if self.tokenizer.opt(ToT::BangEqual).is_some() {
+        if self.match_next(ToT::BangEqual) {
             return Ok(Expr::binary(left, BinaryOp::NotEqual, self.unary()?));
         }
 
-        if self.tokenizer.opt(ToT::EqualEqual).is_some() {
+        if self.match_next(ToT::EqualEqual) {
             return Ok(Expr::binary(left, BinaryOp::Equal, self.unary()?));
         }
 
@@ -55,7 +76,7 @@ impl<'source> Parser<'source> {
     }
 
     fn unary(&mut self) -> ParseResult<Expr> {
-        if self.tokenizer.opt(ToT::Not).is_some() {
+        if self.match_next(ToT::Not) {
             return Ok(Expr::unary(UnaryOp::Not, self.unary()?));
         }
 
@@ -79,5 +100,10 @@ impl<'source> Parser<'source> {
         contents.push(self.parse_expression()?);
         self.tokenizer.expect(ToT::CloseParen)?;
         Ok(Expr::Block(contents))
+    }
+
+    // Generic Parsing functions
+    fn match_next(&mut self, token_type: ToT) -> bool {
+        self.tokenizer.opt(token_type).is_some()
     }
 }

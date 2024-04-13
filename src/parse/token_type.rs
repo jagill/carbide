@@ -7,6 +7,7 @@ pub enum TokenType {
     Newline,
     #[regex(r"[ \t\r\f]+")]
     Whitespace,
+
     #[token("bool")]
     Bool,
     #[token("true")]
@@ -19,6 +20,7 @@ pub enum TokenType {
     And,
     #[token("or")]
     Or,
+
     #[token("==")]
     EqualEqual,
     #[token("!=")]
@@ -27,6 +29,14 @@ pub enum TokenType {
     OpenParen,
     #[token(")")]
     CloseParen,
+
+    #[token("if")]
+    If,
+    #[token("then")]
+    Then,
+    #[token("else")]
+    Else,
+
     #[regex(r"[a-zA-Z_]+")]
     Identifier,
     UnknownToken,

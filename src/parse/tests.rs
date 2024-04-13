@@ -170,3 +170,41 @@ fn test_parse_block() {
         ))
     );
 }
+
+#[test]
+fn test_if_exprs() {
+    assert_eq!(
+        parse_expr("if true (false)"),
+        Ok(Expr::ifthen(
+            Expr::bool(true),
+            Expr::Block(vec![Expr::bool(false)]),
+            None,
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("if true (false) else true or false"),
+        Ok(Expr::ifthen(
+            Expr::bool(true),
+            Expr::Block(vec![Expr::bool(false)]),
+            Some(Expr::binary(
+                Expr::bool(true),
+                BinaryOp::Or,
+                Expr::bool(false),
+            )),
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("if true (false) else if true (true) else false"),
+        Ok(Expr::ifthen(
+            Expr::bool(true),
+            Expr::Block(vec![Expr::bool(false)]),
+            Some(Expr::ifthen(
+                Expr::bool(true),
+                Expr::Block(vec![Expr::bool(true)]),
+                Some(Expr::bool(false)),
+            ))
+        ))
+    );
+}
