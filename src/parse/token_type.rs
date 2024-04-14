@@ -37,6 +37,8 @@ pub enum TokenType {
     #[token("else")]
     Else,
 
+    #[token("_")]
+    Underscore,
     #[regex(r"[a-zA-Z_]+")]
     Identifier,
     UnknownToken,
@@ -47,15 +49,8 @@ mod tests {
     use super::*;
     use TokenType::*;
 
-    #[test]
-    fn test_bool_keywords() {
-        let mut lex = TokenType::lexer(
-            r"
-        bool true or false
-        and not
-
-        ",
-        );
+    fn assert_tokens(input: &str, tokens: Vec<TokenType>) {
+        let mut lex = TokenType::lexer(input);
         let mut output = Vec::new();
         while let Some(res) = lex.next() {
             match res.unwrap() {
@@ -63,6 +58,24 @@ mod tests {
                 token => output.push(token),
             }
         }
-        assert_eq!(output, vec![Bool, True, Or, False, And, Not]);
+        assert_eq!(output, tokens);
+    }
+
+    #[test]
+    fn test_bool_keywords() {
+        assert_tokens(
+            r"
+        bool true or false
+        and not
+
+        ",
+            vec![Bool, True, Or, False, And, Not],
+        );
+    }
+
+    #[test]
+    fn test_underscores() {
+        assert_tokens("_", vec![Underscore]);
+        assert_tokens("_a", vec![Identifier]);
     }
 }
