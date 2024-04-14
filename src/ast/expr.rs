@@ -21,11 +21,14 @@ pub enum Expr {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
     Bool(bool),
+    Int(i64),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum UnaryOp {
     Not,
+    Neg,
+    Pos,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -34,11 +37,19 @@ pub enum BinaryOp {
     Or,
     Equal,
     NotEqual,
+    Add,
+    Sub,
+    Mult,
+    Div,
 }
 
 impl Expr {
     pub fn bool(b: bool) -> Self {
         Expr::Literal(Literal::Bool(b))
+    }
+
+    pub fn int(i: i64) -> Self {
+        Expr::Literal(Literal::Int(i))
     }
 
     pub fn unary(op: UnaryOp, right: Expr) -> Self {

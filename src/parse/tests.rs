@@ -208,3 +208,49 @@ fn test_if_exprs() {
         ))
     );
 }
+
+#[test]
+fn test_int_exprs() {
+    assert_eq!(parse_expr("12"), Ok(Expr::int(12)));
+
+    assert_eq!(
+        parse_expr("-12"),
+        Ok(Expr::unary(UnaryOp::Neg, Expr::int(12)))
+    );
+
+    assert_eq!(
+        parse_expr("1 + -2"),
+        Ok(Expr::binary(
+            Expr::int(1),
+            BinaryOp::Add,
+            Expr::unary(UnaryOp::Neg, Expr::int(2))
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("1 * 2 + 3"),
+        Ok(Expr::binary(
+            Expr::binary(Expr::int(1), BinaryOp::Mult, Expr::int(2)),
+            BinaryOp::Add,
+            Expr::int(3)
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("1 * -2"),
+        Ok(Expr::binary(
+            Expr::int(1),
+            BinaryOp::Mult,
+            Expr::unary(UnaryOp::Neg, Expr::int(2))
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("-1 * 2"),
+        Ok(Expr::binary(
+            Expr::unary(UnaryOp::Neg, Expr::int(1)),
+            BinaryOp::Mult,
+            Expr::int(2)
+        ))
+    );
+}

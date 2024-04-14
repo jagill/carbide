@@ -62,14 +62,42 @@ impl<'source> Parser<'source> {
     }
 
     fn equality(&mut self) -> ParseResult<Expr> {
-        let left = self.unary()?;
+        let left = self.term()?;
 
         if self.match_next(ToT::BangEqual) {
-            return Ok(Expr::binary(left, BinaryOp::NotEqual, self.unary()?));
+            return Ok(Expr::binary(left, BinaryOp::NotEqual, self.term()?));
         }
 
         if self.match_next(ToT::EqualEqual) {
-            return Ok(Expr::binary(left, BinaryOp::Equal, self.unary()?));
+            return Ok(Expr::binary(left, BinaryOp::Equal, self.term()?));
+        }
+
+        Ok(left)
+    }
+
+    fn term(&mut self) -> ParseResult<Expr> {
+        let left = self.factor()?;
+
+        if self.match_next(ToT::Minus) {
+            return Ok(Expr::binary(left, BinaryOp::Sub, self.term()?));
+        }
+
+        if self.match_next(ToT::Plus) {
+            return Ok(Expr::binary(left, BinaryOp::Add, self.term()?));
+        }
+
+        Ok(left)
+    }
+
+    fn factor(&mut self) -> ParseResult<Expr> {
+        let left = self.unary()?;
+
+        if self.match_next(ToT::Slash) {
+            return Ok(Expr::binary(left, BinaryOp::Div, self.factor()?));
+        }
+
+        if self.match_next(ToT::Star) {
+            return Ok(Expr::binary(left, BinaryOp::Mult, self.factor()?));
         }
 
         Ok(left)
@@ -78,6 +106,12 @@ impl<'source> Parser<'source> {
     fn unary(&mut self) -> ParseResult<Expr> {
         if self.match_next(ToT::Not) {
             return Ok(Expr::unary(UnaryOp::Not, self.unary()?));
+        }
+        if self.match_next(ToT::Minus) {
+            return Ok(Expr::unary(UnaryOp::Neg, self.unary()?));
+        }
+        if self.match_next(ToT::Plus) {
+            return Ok(Expr::unary(UnaryOp::Pos, self.unary()?));
         }
 
         self.primary()
@@ -88,6 +122,10 @@ impl<'source> Parser<'source> {
         match token.token_type {
             ToT::False => Ok(Expr::bool(false)),
             ToT::True => Ok(Expr::bool(true)),
+            ToT::Int => {
+                let i: i64 = token.data.lexeme.parse().unwrap();
+                Ok(Expr::int(i))
+            }
             ToT::OpenParen => self.block(),
             _ => Err(ParseError::unexpected_token(token, "primary expression")),
         }

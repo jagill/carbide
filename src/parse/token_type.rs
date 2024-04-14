@@ -21,6 +21,17 @@ pub enum TokenType {
     #[token("or")]
     Or,
 
+    #[token("+")]
+    Plus,
+    #[token("-")]
+    Minus,
+    #[token("*")]
+    Star,
+    #[token("/")]
+    Slash,
+    #[regex(r"[0-9]+")]
+    Int,
+
     #[token("==")]
     EqualEqual,
     #[token("!=")]
@@ -77,5 +88,14 @@ mod tests {
     fn test_underscores() {
         assert_tokens("_", vec![Underscore]);
         assert_tokens("_a", vec![Identifier]);
+    }
+
+    #[test]
+    fn test_ints() {
+        assert_tokens("123", vec![Int]);
+        assert_tokens("-123", vec![Minus, Int]);
+        assert_tokens("--123", vec![Minus, Minus, Int]);
+        assert_tokens("- -123", vec![Minus, Minus, Int]);
+        assert_tokens("-+123", vec![Minus, Plus, Int]);
     }
 }
