@@ -35,6 +35,10 @@ pub enum UnaryOp {
 pub enum BinaryOp {
     And,
     Or,
+    Less,
+    LessEq,
+    Great,
+    GreatEq,
     Equal,
     NotEqual,
     Add,

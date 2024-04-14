@@ -254,3 +254,29 @@ fn test_int_exprs() {
         ))
     );
 }
+
+#[test]
+fn test_comparisons() {
+    assert_eq!(
+        parse_expr("1 <= 2"),
+        Ok(Expr::binary(Expr::int(1), BinaryOp::LessEq, Expr::int(2)))
+    );
+
+    assert_eq!(
+        parse_expr("1 <= 2 != 3 > 4"),
+        Ok(Expr::binary(
+            Expr::binary(Expr::int(1), BinaryOp::LessEq, Expr::int(2)),
+            BinaryOp::NotEqual,
+            Expr::binary(Expr::int(3), BinaryOp::Great, Expr::int(4))
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("1 + 2 >= 3 * 4"),
+        Ok(Expr::binary(
+            Expr::binary(Expr::int(1), BinaryOp::Add, Expr::int(2)),
+            BinaryOp::GreatEq,
+            Expr::binary(Expr::int(3), BinaryOp::Mult, Expr::int(4))
+        ))
+    );
+}

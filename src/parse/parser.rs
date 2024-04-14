@@ -62,14 +62,36 @@ impl<'source> Parser<'source> {
     }
 
     fn equality(&mut self) -> ParseResult<Expr> {
-        let left = self.term()?;
+        let left = self.comparison()?;
 
         if self.match_next(ToT::BangEqual) {
-            return Ok(Expr::binary(left, BinaryOp::NotEqual, self.term()?));
+            return Ok(Expr::binary(left, BinaryOp::NotEqual, self.comparison()?));
         }
 
         if self.match_next(ToT::EqualEqual) {
-            return Ok(Expr::binary(left, BinaryOp::Equal, self.term()?));
+            return Ok(Expr::binary(left, BinaryOp::Equal, self.comparison()?));
+        }
+
+        Ok(left)
+    }
+
+    fn comparison(&mut self) -> ParseResult<Expr> {
+        let left = self.term()?;
+
+        if self.match_next(ToT::RAngle) {
+            return Ok(Expr::binary(left, BinaryOp::Great, self.term()?));
+        }
+
+        if self.match_next(ToT::RAngleEq) {
+            return Ok(Expr::binary(left, BinaryOp::GreatEq, self.term()?));
+        }
+
+        if self.match_next(ToT::LAngle) {
+            return Ok(Expr::binary(left, BinaryOp::Less, self.term()?));
+        }
+
+        if self.match_next(ToT::LAngleEq) {
+            return Ok(Expr::binary(left, BinaryOp::LessEq, self.term()?));
         }
 
         Ok(left)

@@ -32,6 +32,14 @@ pub enum TokenType {
     #[regex(r"[0-9]+")]
     Int,
 
+    #[token("<=")]
+    LAngleEq,
+    #[token("<")]
+    LAngle,
+    #[token(">=")]
+    RAngleEq,
+    #[token(">")]
+    RAngle,
     #[token("==")]
     EqualEqual,
     #[token("!=")]
